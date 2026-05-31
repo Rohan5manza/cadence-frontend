@@ -330,3 +330,92 @@ export const DETAILED_TOPICS = [
     categories: ['history', 'humanities', 'social'],
   },
 ]
+
+export const ROLES = [
+  {
+    id:    'student',
+    label: 'Student',
+    emoji: '🎓',
+    desc:  'Undergraduate or graduate student exploring research.',
+  },
+  {
+    id:    'researcher',
+    label: 'Researcher',
+    emoji: '🔬',
+    desc:  'Academic or industry researcher publishing and reading papers.',
+  },
+  {
+    id:    'professor',
+    label: 'Professor / Faculty',
+    emoji: '👨‍🏫',
+    desc:  'Teaching and conducting research at a university.',
+  },
+  {
+    id:    'industry',
+    label: 'Industry Professional',
+    emoji: '💼',
+    desc:  'Applying research in a company or startup.',
+  },
+  {
+    id:    'curious',
+    label: 'Curious Learner',
+    emoji: '🌱',
+    desc:  'Passionate about science without a formal research role.',
+  },
+]
+ 
+export const READING_GOALS = [
+  {
+    id:    'stay_current',
+    label: 'Stay Current',
+    emoji: '📡',
+    desc:  'Keep up with the latest papers in my field as they come out.',
+  },
+  {
+    id:    'deep_dive',
+    label: 'Deep Dive',
+    emoji: '🤿',
+    desc:  'Thoroughly understand foundational and highly-cited work.',
+  },
+  {
+    id:    'broad',
+    label: 'Broad Exploration',
+    emoji: '🗺️',
+    desc:  'Discover interesting research across many different fields.',
+  },
+  {
+    id:    'specific',
+    label: 'Specific Project',
+    emoji: '🎯',
+    desc:  'Research a particular topic for a paper, thesis, or project.',
+  },
+]
+ 
+export const EXPERIENCE_LEVELS = [
+  {
+    id:    'beginner',
+    label: 'New to Research',
+    emoji: '🌱',
+    desc:  'Just starting out — prefer plain-language introductions.',
+  },
+  {
+    id:    'intermediate',
+    label: 'Comfortable',
+    emoji: '⚗️',
+    desc:  'Familiar with academic papers and field-specific terminology.',
+  },
+  {
+    id:    'expert',
+    label: 'Expert',
+    emoji: '🏆',
+    desc:  'Deep specialist knowledge — prefer dense, technical papers.',
+  },
+]
+ 
+export const WEEKLY_GOALS = [
+  { id: 3,   label: '3 papers',  emoji: '🎯', desc: 'Light — just the highlights' },
+  { id: 5,   label: '5 papers',  emoji: '📚', desc: 'Moderate — good habit' },
+  { id: 10,  label: '10 papers', emoji: '🔥', desc: 'Serious — active researcher' },
+  { id: 20,  label: '20+ papers',emoji: '🚀', desc: 'Intense — fully immersed' },
+]
+ 

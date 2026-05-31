@@ -1,15 +1,15 @@
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Colors, Fonts, Spacing } from '../constants'
@@ -25,31 +25,37 @@ export default function AuthScreen() {
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async () => {
-    if (!email || !password) {
-      Alert.alert('Error', 'Please enter email and password')
-      return
-    }
-
-    setLoading(true)
-    try {
-      const res = mode === 'login'
-        ? await authAPI.login({ email, password })
-        : await authAPI.register({ email, password })
-
-      // Store token
-      setToken(res.access_token)
-      await storeToken(res.access_token)
-
-      // Navigate to main app
-      router.replace('/(tabs)/discover')
-
-    } catch (err: any) {
-      const msg = err?.response?.data?.detail || 'Something went wrong'
-      Alert.alert('Error', msg)
-    } finally {
-      setLoading(false)
-    }
+  if (!email || !password) {
+    Alert.alert('Error', 'Please enter email and password')
+    return
   }
+
+  setLoading(true)
+  try {
+  const res = mode === 'login'
+    ? await authAPI.login({ email, password })
+    : await authAPI.register({ email, password })
+
+  if (mode === 'register') {
+    // Clear any leftover local data from previous account
+    await useStore.getState().logout()
+    // Re-set the new token since logout cleared it
+    setToken(res.access_token)
+    await storeToken(res.access_token)
+    router.replace('/onboarding' as any)
+  } else {
+    setToken(res.access_token)
+    await storeToken(res.access_token)
+    router.replace('/(tabs)/home' as any)
+  }
+
+} catch (err: any) {
+  const msg = err?.response?.data?.detail || 'Something went wrong'
+  Alert.alert('Error', msg)
+} finally {
+  setLoading(false)
+}
+}
 
   return (
     <SafeAreaView style={styles.container}>

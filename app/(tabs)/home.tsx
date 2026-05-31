@@ -2,28 +2,28 @@ import { useFocusEffect, useRouter } from 'expo-router'
 import * as SecureStore from 'expo-secure-store'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-    ActivityIndicator,
-    Animated,
-    Dimensions,
-    FlatList,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Animated,
+  Dimensions,
+  FlatList,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Colors, Fonts, Spacing, Swipe } from '../../constants'
 import { feedAPI } from '../../services/api'
 import {
-    registerForPushNotifications,
-    scheduleDailyReminder,
-    scheduleWeeklyDigest,
+  registerForPushNotifications,
+  scheduleDailyReminder,
+  scheduleStreakAtRiskReminder,
+  scheduleWeeklyDigest,
 } from '../../services/notifications'
 import useStore from '../../store/useStore'
 import type { Paper } from '../../types'
-
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const CARD_WIDTH  = SCREEN_WIDTH - Spacing.lg * 2
 const CARD_HEIGHT = 460
@@ -95,23 +95,60 @@ function HSection({ title, papers, onPaperPress, loading = false }: {
 function CardContent({ paper }: { paper: Paper }) {
   const categories = safeArray(paper.categories)
   const authors    = safeArray(paper.authors)
+  const isRecent   = paper.year && paper.year >= 2023
+  const isCited    = paper.citation_count && paper.citation_count > 100
+
   return (
     <View style={styles.content}>
-      <View style={styles.categories}>
-        {categories.slice(0, 2).map((cat, i) => (
-          <View key={`${cat}-${i}`} style={styles.categoryPill}>
-            <Text style={styles.categoryText}>{cat}</Text>
-          </View>
-        ))}
+      {/* Top row — category pill + badges */}
+      <View style={styles.cardTopRow}>
+        <View style={styles.categories}>
+          {categories.slice(0, 2).map((cat, i) => (
+            <View key={`${cat}-${i}`} style={styles.categoryPill}>
+              <Text style={styles.categoryText}>{cat}</Text>
+            </View>
+          ))}
+        </View>
+        <View style={styles.badges}>
+          {isRecent && (
+            <View style={styles.badgeNew}>
+              <Text style={styles.badgeNewText}>NEW</Text>
+            </View>
+          )}
+          {isCited && (
+            <View style={styles.badgeCited}>
+              <Text style={styles.badgeCitedText}>🔥 {Number(paper.citation_count).toLocaleString()}</Text>
+            </View>
+          )}
+        </View>
       </View>
-      <Text style={styles.cardTitle} numberOfLines={4}>{safeString(paper.title)}</Text>
+
+      {/* Title — bigger and bolder */}
+      <Text style={styles.cardTitle} numberOfLines={4}>
+        {safeString(paper.title)}
+      </Text>
+
+      {/* Meta */}
       <Text style={styles.cardMeta} numberOfLines={1}>
         {authors.slice(0, 2).join(', ')}
         {authors.length > 2 ? ' et al.' : ''}
         {paper.year ? ` · ${paper.year}` : ''}
       </Text>
-      {paper.venue ? <Text style={styles.cardVenue}>{paper.venue}</Text> : null}
-      <Text style={styles.cardAbstract} numberOfLines={7}>{safeString(paper.abstract)}</Text>
+
+      {paper.venue ? (
+        <Text style={styles.cardVenue} numberOfLines={1}>{paper.venue}</Text>
+      ) : null}
+
+      {/* Abstract with "Read more" fade */}
+      <View style={styles.abstractContainer}>
+        <Text style={styles.cardAbstract} numberOfLines={6}>
+          {safeString(paper.abstract)}
+        </Text>
+        <View style={styles.abstractFade} />
+      </View>
+
+      {/* Bottom hint */}
+      <Text style={styles.tapHint}>Tap to read</Text>
     </View>
   )
 }
@@ -136,6 +173,7 @@ export default function HomeScreen() {
   const [likedPapers2, setLikedPapers2]       = useState<Paper[]>([]) // local swipe likes
   const [sectionsLoading, setSectionsLoading] = useState(true)
   const [trendingLoading, setTrendingLoading] = useState(false)
+  const [stackError, setStackError] = useState(false)
 
   // Toast state
   const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false })
@@ -182,6 +220,7 @@ export default function HomeScreen() {
       const pickCacheKey = `todays_pick_${today}`
       const pickIdKey    = `todays_pick_id_${today}`
 
+
       const cachedPick = await SecureStore.getItemAsync(pickCacheKey).catch(() => null)
 
       if (cachedPick) {
@@ -194,6 +233,8 @@ export default function HomeScreen() {
         setPapers(filtered)
         setMixed([...discoverPapers].sort(() => Math.random() - 0.5).slice(0, 10))
         setMadeForYou(discoverPapers.slice(10, 20))
+        setStackError(false)
+       
       } else {
         // No cache — fire both in parallel
         const [pick, discoverPapers] = await Promise.all([
@@ -209,7 +250,7 @@ export default function HomeScreen() {
         setMixed([...discoverPapers].sort(() => Math.random() - 0.5).slice(0, 10))
         setMadeForYou(discoverPapers.slice(10, 20))
       }
-    } catch {}
+    } catch {setStackError(true)}
 
     // Sections in parallel — unchanged
     try {
@@ -226,7 +267,13 @@ export default function HomeScreen() {
 
     await loadHistory()
     const granted = await registerForPushNotifications()
-    if (granted) { await scheduleDailyReminder(); await scheduleWeeklyDigest() }
+    if (granted) { await scheduleDailyReminder(); await scheduleWeeklyDigest() 
+      const { streak } = useStore.getState()
+    if (streak.currentStreak > 1) {
+      await scheduleStreakAtRiskReminder(streak.currentStreak)
+    }
+
+    }
   }
   init()
 }, [])
@@ -325,18 +372,17 @@ export default function HomeScreen() {
   setMoreLikeThis([])
   setTrendingPapers([])
   setSectionsLoading(true)
-  // re-run init inline
+
   let pickId: string | null = null
   try {
-    const today2       = new Date().toISOString().split('T')[0]
-    const pickCacheKey = `todays_pick_${today2}`
-    const pickIdKey    = `todays_pick_id_${today2}`
-    const pick         = await feedAPI.getTodaysPick()
+    const pick = await feedAPI.getTodaysPick()
     setTodaysPick(pick)
     pickId = pick.id
-    await SecureStore.setItemAsync(pickCacheKey, JSON.stringify(pick)).catch(() => {})
-    await SecureStore.setItemAsync(pickIdKey, pick.id).catch(() => {})
+    const today2 = new Date().toISOString().split('T')[0]
+    await SecureStore.setItemAsync(`todays_pick_${today2}`, JSON.stringify(pick)).catch(() => {})
+    await SecureStore.setItemAsync(`todays_pick_id_${today2}`, pick.id).catch(() => {})
   } catch {}
+
   try {
     const discoverPapers = await feedAPI.getDiscover()
     const filtered = pickId ? discoverPapers.filter(p => p.id !== pickId) : discoverPapers
@@ -344,6 +390,7 @@ export default function HomeScreen() {
     setMixed([...discoverPapers].sort(() => Math.random() - 0.5).slice(0, 10))
     setMadeForYou(discoverPapers.slice(10, 20))
   } catch {}
+
   try {
     const [liked, moreLike, trending] = await Promise.all([
       feedAPI.getLiked(10),
@@ -404,10 +451,21 @@ export default function HomeScreen() {
                 </View>
               </Animated.View>
             ) : (
-              <View style={styles.emptyStack}>
-                <Text style={styles.emptyEmoji}>🎉</Text>
-                <Text style={styles.emptyTitle}>You're all caught up!</Text>
-              </View>
+                <View style={styles.emptyStack}>
+    {stackError ? (
+      <>
+        <Text style={styles.emptyEmoji}>⚠️</Text>
+        <Text style={styles.emptyTitle}>Couldn't load papers</Text>
+        <Text style={styles.emptySubtitle}>Pull down to try again</Text>
+      </>
+    ) : (
+      <>
+        <Text style={styles.emptyEmoji}>🎉</Text>
+        <Text style={styles.emptyTitle}>You're all caught up!</Text>
+      </>
+    )}
+  </View>
+
             )}
             {/* Toast message */}
             {toast.visible && (
@@ -518,24 +576,10 @@ const styles = StyleSheet.create({
   swipeHeader:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.lg, marginBottom: Spacing.sm },
   swipeSectionTitle:{ color: Colors.textPrimary, fontSize: Fonts.sizes.lg, fontWeight: Fonts.weights.bold },
   cardStack:        { height: CARD_HEIGHT + 20, width: '100%', alignItems: 'center', justifyContent: 'center' },
-  card:             { position: 'absolute', width: CARD_WIDTH, height: CARD_HEIGHT, borderRadius: 20, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 16 },
+
   topCard:          { zIndex: 10 },
   secondCard:       { zIndex: 5, transform: [{ scale: 0.96 }, { translateY: 10 }] },
   thirdCard:        { zIndex: 1, transform: [{ scale: 0.92 }, { translateY: 20 }] },
-  content:          { flex: 1, padding: Spacing.lg },
-  categories:       { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: Spacing.sm },
-  categoryPill:     { backgroundColor: Colors.accentDim, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
-  categoryText:     { color: Colors.accent, fontSize: Fonts.sizes.xs, fontWeight: Fonts.weights.semibold },
-  cardTitle:        { color: Colors.textPrimary, fontSize: Fonts.sizes.xl, fontWeight: Fonts.weights.bold, lineHeight: 26, marginBottom: Spacing.sm },
-  cardMeta:         { color: Colors.textSecondary, fontSize: Fonts.sizes.sm, marginBottom: 4 },
-  cardVenue:        { color: Colors.accent, fontSize: Fonts.sizes.sm, fontWeight: Fonts.weights.medium, marginBottom: Spacing.md },
-  cardAbstract:     { color: Colors.textSecondary, fontSize: Fonts.sizes.sm, lineHeight: 20, flex: 1 },
-  cardActions:      { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: Colors.border },
-  cardBtn:          { width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center' },
-  skipBtn:          { backgroundColor: 'rgba(247,79,79,0.15)', borderWidth: 1, borderColor: Colors.skip },
-  likeBtn:          { backgroundColor: 'rgba(79,142,247,0.15)', borderWidth: 1, borderColor: Colors.accent },
-  skipBtnText:      { color: Colors.skip, fontSize: Fonts.sizes.xl, fontWeight: Fonts.weights.bold },
-  likeBtnText:      { color: Colors.accent, fontSize: Fonts.sizes.xl },
   emptyStack:       { alignItems: 'center', gap: Spacing.sm },
   emptyEmoji:       { fontSize: 40 },
   emptyTitle:       { color: Colors.textPrimary, fontSize: Fonts.sizes.lg, fontWeight: Fonts.weights.bold },
@@ -559,6 +603,7 @@ const styles = StyleSheet.create({
   genreEmoji:       { fontSize: 14 },
   genreLabel:       { color: Colors.textSecondary, fontSize: Fonts.sizes.sm },
   genreLabelActive: { color: Colors.accent },
+  emptySubtitle: { color: Colors.textMuted, fontSize: Fonts.sizes.sm, textAlign: 'center', marginTop: 4 },
   noGenreText:      { color: Colors.textMuted, fontSize: Fonts.sizes.sm, paddingHorizontal: Spacing.lg, fontStyle: 'italic' },
   toast: {
     position: 'absolute',
@@ -575,4 +620,28 @@ const styles = StyleSheet.create({
     fontSize: Fonts.sizes.md,
     fontWeight: Fonts.weights.medium,
   },
+  content:           { flex: 1, padding: Spacing.lg, paddingBottom: Spacing.sm },
+cardTopRow:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing.md },
+categories:        { flexDirection: 'row', flexWrap: 'wrap', gap: 6, flex: 1 },
+badges:            { flexDirection: 'row', gap: 6, marginLeft: 8 },
+categoryPill:      { backgroundColor: 'rgba(59,130,246,0.15)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: 'rgba(59,130,246,0.3)' },
+categoryText:      { color: Colors.accent, fontSize: Fonts.sizes.xs, fontWeight: Fonts.weights.semibold },
+badgeNew:          { backgroundColor: 'rgba(45,212,191,0.15)', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, borderWidth: 1, borderColor: 'rgba(45,212,191,0.4)' },
+badgeNewText:      { color: '#2DD4BF', fontSize: 9, fontWeight: Fonts.weights.bold, letterSpacing: 0.8 },
+badgeCited:        { backgroundColor: 'rgba(251,191,36,0.12)', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, borderWidth: 1, borderColor: 'rgba(251,191,36,0.35)' },
+badgeCitedText:    { color: '#FBBF24', fontSize: 9, fontWeight: Fonts.weights.bold },
+cardTitle:         { color: Colors.textPrimary, fontSize: 22, fontWeight: Fonts.weights.bold, lineHeight: 30, marginBottom: Spacing.sm, letterSpacing: -0.3 },
+cardMeta:          { color: Colors.textMuted, fontSize: Fonts.sizes.xs, marginBottom: 3 },
+cardVenue:         { color: Colors.accent, fontSize: Fonts.sizes.xs, fontWeight: Fonts.weights.semibold, marginBottom: Spacing.md, letterSpacing: 0.3 },
+abstractContainer: { flex: 1, overflow: 'hidden', position: 'relative' },
+cardAbstract:      { color: Colors.textSecondary, fontSize: Fonts.sizes.sm, lineHeight: 21 },
+abstractFade:      { position: 'absolute', bottom: 0, left: 0, right: 0, height: 32, backgroundColor: 'transparent' },
+tapHint:           { color: Colors.textMuted, fontSize: 10, textAlign: 'center', paddingTop: Spacing.sm, letterSpacing: 0.5 },
+card:              { position: 'absolute', width: CARD_WIDTH, height: CARD_HEIGHT, borderRadius: 24, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, shadowColor: Colors.accent, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 20 },
+cardActions:       { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: Spacing.xl, paddingBottom: Spacing.lg, paddingTop: Spacing.sm },
+cardBtn:           { width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center' },
+skipBtn:           { backgroundColor: 'rgba(247,79,79,0.12)', borderWidth: 1.5, borderColor: Colors.skip },
+likeBtn:           { backgroundColor: 'rgba(59,130,246,0.12)', borderWidth: 1.5, borderColor: Colors.accent },
+skipBtnText:       { color: Colors.skip, fontSize: 22, fontWeight: Fonts.weights.bold },
+likeBtnText:       { color: Colors.accent, fontSize: 22 },
 })

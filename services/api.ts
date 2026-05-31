@@ -145,14 +145,37 @@ deletePlaylist: async (playlistId: string | number): Promise<void> => {
 }
 
 // ── User ──────────────────────────────────────────────────────────────────────
+ 
 export const userAPI = {
-  getPreferences: async (): Promise<{ topics: string[], difficulty: string }> => {
-    const res = await api.get('/user/preferences')
+  getProfile: async (): Promise<{
+    topics: string[]
+    difficulty: string
+    display_name: string
+    role: string
+    institution: string
+    primary_field: string
+    reading_goal: string
+    experience_level: string
+    weekly_goal: number
+  }> => {
+    const res = await api.get('/user/profile')
     return res.data
   },
-  updatePreferences: async (preferences: { topics: string[], difficulty: string }): Promise<void> => {
-    await api.put('/user/preferences', preferences)
-  }
+ 
+  updateProfile: async (profile: {
+    topics:          string[]
+    difficulty:      string
+    display_name:    string
+    role:            string
+    institution:     string
+    primary_field:   string
+    reading_goal:    string
+    experience_level:string
+    weekly_goal:     number
+  }): Promise<void> => {
+    await api.put('/user/profile', profile)
+  },
 }
+ 
 
 export default api

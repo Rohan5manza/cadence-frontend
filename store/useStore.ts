@@ -9,7 +9,8 @@ const PREFS_KEY    = 'cadence_prefs'
 const HISTORY_KEY  = 'cadence_history'
 const READING_KEY  = 'cadence_reading'
 const STREAK_KEY   = 'cadence_streak'
-const TWO_DAYS_MS  = 2 * 24 * 60 * 60 * 1000
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
+
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const todayStr     = () => new Date().toISOString().split('T')[0]
@@ -17,9 +18,19 @@ const yesterdayStr = () => new Date(Date.now() - 86400000).toISOString().split('
 
 // ── Interfaces ────────────────────────────────────────────────────────────────
 interface UserPreferences {
+  // Existing
   topics:          string[]
   difficultyLevel: 'any' | 'accessible' | 'technical' | 'expert'
   onboardingDone:  boolean
+ 
+  // New profile fields
+  displayName:     string
+  role:            'student' | 'researcher' | 'professor' | 'industry' | 'curious'
+  institution:     string
+  primaryField:    string   // one topic ID from DETAILED_TOPICS
+  readingGoal:     'stay_current' | 'deep_dive' | 'broad' | 'specific'
+  experienceLevel: 'beginner' | 'intermediate' | 'expert'
+  weeklyGoal:      number   // 3 | 5 | 10 | 20
 }
 
 interface ReadingProgress {
@@ -92,6 +103,13 @@ const DEFAULT_PREFS: UserPreferences = {
   topics:          [],
   difficultyLevel: 'any',
   onboardingDone:  false,
+  displayName:     '',
+  role:            'curious',
+  institution:     '',
+  primaryField:    '',
+  readingGoal:     'broad',
+  experienceLevel: 'intermediate',
+  weeklyGoal:      5,
 }
 
 const DEFAULT_STREAK: StreakData = {
@@ -114,7 +132,7 @@ const useStore = create<CadenceStore>((set, get) => ({
   setToken: async (token) => {
     set({ token })
     if (token) {
-      const expiry = Date.now() + TWO_DAYS_MS
+      const expiry = Date.now() + THIRTY_DAYS_MS
       await SecureStore.setItemAsync(TOKEN_KEY, token)
       await SecureStore.setItemAsync(TOKEN_EXPIRY, String(expiry))
     } else {
@@ -127,6 +145,7 @@ const useStore = create<CadenceStore>((set, get) => ({
     try {
       const token  = await SecureStore.getItemAsync(TOKEN_KEY)
       const expiry = await SecureStore.getItemAsync(TOKEN_EXPIRY)
+      console.log('Token expiry:', new Date(Number(expiry)).toISOString())
       if (token && expiry && Date.now() < Number(expiry)) {
         set({ token })
         return true
@@ -138,10 +157,25 @@ const useStore = create<CadenceStore>((set, get) => ({
   },
 
   logout: async () => {
-    await SecureStore.deleteItemAsync(TOKEN_KEY)
-    await SecureStore.deleteItemAsync(TOKEN_EXPIRY)
-    set({ token: null, user: null })
-  },
+  await SecureStore.deleteItemAsync(TOKEN_KEY)
+  await SecureStore.deleteItemAsync(TOKEN_EXPIRY)
+  await SecureStore.deleteItemAsync(HISTORY_KEY)
+  await SecureStore.deleteItemAsync(READING_KEY)
+  await SecureStore.deleteItemAsync(STREAK_KEY)
+  // Clear today's pick cache
+  const today = new Date().toISOString().split('T')[0]
+  await SecureStore.deleteItemAsync(`todays_pick_${today}`).catch(() => {})
+  await SecureStore.deleteItemAsync(`todays_pick_id_${today}`).catch(() => {})
+  set({
+    token:           null,
+    user:            null,
+    recentHistory:   [],
+    readingProgress: null,
+    streak:          DEFAULT_STREAK,
+    savedPaperIds:   new Set(),
+    playlists:       [],
+  })
+},
 
   // ── Preferences ────────────────────────────────────────────────────────────
   preferences: DEFAULT_PREFS,
