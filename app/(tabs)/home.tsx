@@ -28,6 +28,15 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const CARD_WIDTH  = SCREEN_WIDTH - Spacing.lg * 2
 const CARD_HEIGHT = 460
 
+
+const HOT_GENRES = [
+  { id: 'cs_ml',       label: 'ML/AI',    emoji: '🤖' },
+  { id: 'cs_nlp',      label: 'NLP',      emoji: '💬' },
+  { id: 'cs_cv',       label: 'Vision',   emoji: '👁️' },
+  { id: 'bio_neuro',   label: 'Neuro',    emoji: '🧠' },
+  { id: 'med_clinical',label: 'Medicine', emoji: '🏥' },
+  { id: 'phys_quantum',label: 'Quantum',  emoji: '⚛️' },
+]
 const GENRES = [
   { id: 'cs.AI',   label: 'AI',        emoji: '🤖' },
   { id: 'cs.LG',   label: 'ML',        emoji: '🧠' },
@@ -174,6 +183,9 @@ export default function HomeScreen() {
   const [sectionsLoading, setSectionsLoading] = useState(true)
   const [trendingLoading, setTrendingLoading] = useState(false)
   const [stackError, setStackError] = useState(false)
+  const [hotPapers, setHotPapers]       = useState<Paper[]>([])
+const [hotCategory, setHotCategory]   = useState('cs_ml')
+const [hotLoading, setHotLoading]     = useState(false)
 
   // Toast state
   const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false })
@@ -296,6 +308,14 @@ export default function HomeScreen() {
     }
     fetchTrendingForGenre()
   }, [selectedGenre])
+
+  useEffect(() => {
+  setHotLoading(true)
+  feedAPI.getHot(hotCategory, 10)
+    .then(setHotPapers)
+    .catch(() => setHotPapers([]))
+    .finally(() => setHotLoading(false))
+}, [hotCategory])
 
   useEffect(() => { position.setValue({ x: 0, y: 0 }) }, [topIndex])
 
@@ -564,8 +584,73 @@ export default function HomeScreen() {
         <HSection title="✦ Made for You" papers={madeForYou} onPaperPress={goToPaper} />
 
         <View style={{ height: Spacing.xxl }} />
+        {/* 🌐 Hot Right Now */}
+<View style={styles.hSection}>
+  <Text style={styles.hSectionTitle}>🌐 Hot Right Now</Text>
+  <Text style={styles.hSectionSubtitle}>
+    Trending from Papers With Code & Semantic Scholar
+  </Text>
+  <ScrollView
+    horizontal
+    showsHorizontalScrollIndicator={false}
+    contentContainerStyle={styles.genreRow}
+  >
+    {HOT_GENRES.map(g => (
+      <TouchableOpacity
+        key={g.id}
+        style={[styles.genreChip, hotCategory === g.id && styles.genreChipActive]}
+        onPress={() => setHotCategory(g.id)}
+      >
+        <Text style={styles.genreEmoji}>{g.emoji}</Text>
+        <Text style={[styles.genreLabel, hotCategory === g.id && styles.genreLabelActive]}>
+          {g.label}
+        </Text>
+      </TouchableOpacity>
+    ))}
+  </ScrollView>
+  {hotLoading ? (
+    <ActivityIndicator size="small" color={Colors.accent} style={{ marginLeft: Spacing.lg }} />
+  ) : hotPapers.length > 0 ? (
+    <FlatList
+      horizontal
+      data={hotPapers}
+      keyExtractor={(item) => item.id}
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.hList}
+      renderItem={({ item }) => (
+        <HotCard paper={item} onPress={() => goToPaper(item)} />
+      )}
+    />
+  ) : (
+    <Text style={styles.noGenreText}>No hot papers found</Text>
+  )}
+</View>
       </ScrollView>
     </SafeAreaView>
+  )
+}
+
+function HotCard({ paper, onPress }: { paper: Paper; onPress: () => void }) {
+  const isFromPWC = paper.id?.startsWith('pwc_')
+  const isFromS2  = paper.id?.startsWith('s2_')
+  return (
+    <TouchableOpacity style={styles.hotCard} onPress={onPress} activeOpacity={0.8}>
+      {(isFromPWC || isFromS2) && (
+        <View style={styles.hotSourceBadge}>
+          <Text style={styles.hotSourceText}>
+            {isFromPWC ? '⚙️ PWC' : '🔬 S2'}
+          </Text>
+        </View>
+      )}
+      <Text style={styles.hotTitle} numberOfLines={3}>{paper.title}</Text>
+      {paper.citation_count ? (
+  <Text style={styles.hotCitations}>
+    🔥 {Number(paper.citation_count).toLocaleString()} citations
+  </Text>
+) : (
+  <Text style={styles.hotSourceText}>🤗 Trending Today</Text>
+)}
+    </TouchableOpacity>
   )
 }
 
@@ -644,4 +729,11 @@ skipBtn:           { backgroundColor: 'rgba(247,79,79,0.12)', borderWidth: 1.5, 
 likeBtn:           { backgroundColor: 'rgba(59,130,246,0.12)', borderWidth: 1.5, borderColor: Colors.accent },
 skipBtnText:       { color: Colors.skip, fontSize: 22, fontWeight: Fonts.weights.bold },
 likeBtnText:       { color: Colors.accent, fontSize: 22 },
+hotCard:          { width: 180, backgroundColor: Colors.surface, borderRadius: 14, padding: Spacing.md, borderWidth: 1, borderColor: Colors.border },
+hotSourceBadge:   { backgroundColor: 'rgba(59,130,246,0.15)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, alignSelf: 'flex-start', marginBottom: Spacing.xs },
+hotSourceText:    { color: Colors.accent, fontSize: 9, fontWeight: Fonts.weights.bold },
+hotTitle:         { color: Colors.textPrimary, fontSize: Fonts.sizes.sm, fontWeight: Fonts.weights.semibold, lineHeight: 18, marginBottom: Spacing.xs },
+hotCitations:     { color: '#FBBF24', fontSize: 10, fontWeight: Fonts.weights.semibold, marginTop: 4 },
+hotYear:          { color: Colors.textMuted, fontSize: Fonts.sizes.xs, marginTop: 2 },
+hSectionSubtitle: { color: Colors.textMuted, fontSize: Fonts.sizes.xs, paddingHorizontal: Spacing.lg, marginBottom: Spacing.sm, marginTop: -4 },
 })

@@ -26,15 +26,26 @@
     "plugins": [
       "expo-router",
       [
-        "expo-splash-screen",
-        {
-          "backgroundColor": "#208AEF",
-          "android": {
-            "image": "./assets/images/splash-icon.png",
-            "imageWidth": 76
-          }
-        }
-      ],
+  "expo-splash-screen",
+  {
+    "backgroundColor": "#0A0A0F",
+    "image": "./assets/images/cadence-icon.png",
+    "imageWidth": 200,
+    "resizeMode": "contain",
+    "ios": {
+      "image": "./assets/images/cadence-icon.png",
+      "imageWidth": 200,
+      "backgroundColor": "#0A0A0F",
+      "resizeMode": "contain"
+    },
+    "android": {
+      "image": "./assets/images/cadence-icon.png",
+      "imageWidth": 200,
+      "backgroundColor": "#0A0A0F",
+      "resizeMode": "contain"
+    }
+  }
+],
       "expo-secure-store"
     ],
     "experiments": {

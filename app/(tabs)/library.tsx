@@ -237,7 +237,7 @@ export default function LibraryScreen() {
       {activeTab === 'saved' && (
         papers.length === 0 ? (
           <View style={styles.empty}>
-            <Text style={styles.emptyEmoji}>♡</Text>
+            <Text style={styles.emptyEmoji}></Text>
             <Text style={styles.emptyTitle}>No saved papers yet</Text>
             <Text style={styles.emptySub}>Save papers from any screen to see them here</Text>
           </View>

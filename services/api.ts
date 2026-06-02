@@ -62,17 +62,19 @@ export const papersAPI = {
     const res = await api.get(`/papers/${paperId}/similar`, { params: { limit } })
     return res.data
   },
+  byAuthor: async (paperId: string, limit: number = 10): Promise<Paper[]> => {
+  const res = await api.get(`/papers/${paperId}/by-author?limit=${limit}`)
+  return res.data
+},
   
 }
 
 // ── Feed ──────────────────────────────────────────────────────────────────────
 export const feedAPI = {
-  getDiscover: async (): Promise<Paper[]> => {
-    // We no longer need to pull preferences from useStore here 
-    // because the backend now reads them directly from the database!
-    const res = await api.get('/feed/discover')
-    return res.data
-  },
+  getDiscover: async (sort: string = 'relevance'): Promise<Paper[]> => {
+  const res = await api.get(`/feed/discover?sort=${sort}`)
+  return res.data
+},
   getDailyTen: async (): Promise<RecommendationResponse> => {
     const res = await api.get('/feed/daily')
     return res.data
@@ -99,7 +101,10 @@ getTodaysPick: async (): Promise<Paper> => {
   const res = await api.get('/feed/todays-pick')
   return res.data
 },
- 
+ getHot: async (category: string = 'cs_ml', limit: number = 20): Promise<Paper[]> => {
+  const res = await api.get(`/feed/hot?category=${category}&limit=${limit}`)
+  return res.data
+},
 }
 
 // ── Library ───────────────────────────────────────────────────────────────────

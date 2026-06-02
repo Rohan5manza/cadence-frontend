@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
+  FlatList,
   ScrollView,
   Share,
   StyleSheet,
@@ -42,6 +43,8 @@ export default function PaperDetailScreen() {
   const [webViewUrl, setWebViewUrl]   = useState('')
   const [freePdfUrl, setFreePdfUrl]   = useState<string | null>(null)
   const [checkingPdf, setCheckingPdf] = useState(false)
+  const [authorPapers, setAuthorPapers]   = useState<Paper[]>([])
+const [authorLoading, setAuthorLoading] = useState(false)
 
   const { savePaper, unsavePaper, isSaved, setReadingProgress, addToHistory, recordGenuineRead } = useStore()
 
@@ -49,6 +52,7 @@ export default function PaperDetailScreen() {
   const webViewReadLogged = useRef(false)
 
   const hasPDF = !!(paper?.open_access_url || paper?.arxiv_id)
+
 
   // ── Load paper ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -80,6 +84,14 @@ export default function PaperDetailScreen() {
     check()
   }, [paper, hasPDF])
 
+  useEffect(() => {
+  if (!paper) return
+  setAuthorLoading(true)
+  papersAPI.byAuthor(paper.id, 8)
+    .then(setAuthorPapers)
+    .catch(() => setAuthorPapers([]))
+    .finally(() => setAuthorLoading(false))
+}, [paper])
   // ── Handlers ────────────────────────────────────────────────────────────────
   const handleSaveToggle = () => {
     if (!paper) return
@@ -276,9 +288,44 @@ export default function PaperDetailScreen() {
           </Text>
         ) : null}
 
-        <View style={styles.divider} />
-        <Text style={styles.sectionLabel}>Abstract</Text>
+                <View style={styles.divider} />
         <Text style={styles.abstract}>{safeString(paper.abstract)}</Text>
+
+        {/* Also by Author */}
+        {(authorLoading || authorPapers.length > 0) && (
+          <View style={{ marginTop: Spacing.xl }}>
+            <View style={styles.divider} />
+            <Text style={styles.sectionLabel}>
+              Also by {authors[0]?.split(' ').pop() || 'Author'}
+            </Text>
+            {authorLoading ? (
+              <ActivityIndicator size="small" color={Colors.accent} />
+            ) : (
+              <FlatList
+                horizontal
+                data={authorPapers}
+                keyExtractor={item => item.id}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: Spacing.md, paddingVertical: Spacing.sm }}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.authorCard}
+                    onPress={() => router.push(`/paper/${item.id}`)}
+                    activeOpacity={0.8}
+                  >
+                    {item.year && <Text style={styles.authorCardYear}>{item.year}</Text>}
+                    <Text style={styles.authorCardTitle} numberOfLines={3}>{item.title}</Text>
+                    {item.citation_count ? (
+                      <Text style={styles.authorCardCitations}>
+                        {Number(item.citation_count).toLocaleString()} citations
+                      </Text>
+                    ) : null}
+                  </TouchableOpacity>
+                )}
+              />
+            )}
+          </View>
+        )}
 
         <View style={styles.divider} />
         <Text style={styles.sourceText}>
@@ -345,4 +392,8 @@ const styles = StyleSheet.create({
   sourceText:    { color: Colors.textMuted, fontSize: Fonts.sizes.xs },
   webViewHeader: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderBottomWidth: 1, borderBottomColor: Colors.border },
   webViewClose:  { color: Colors.accent, fontSize: Fonts.sizes.md, fontWeight: Fonts.weights.medium },
+  authorCard:         { width: 160, backgroundColor: Colors.surface, borderRadius: 14, padding: Spacing.md, borderWidth: 1, borderColor: Colors.border },
+authorCardYear:     { color: Colors.accent, fontSize: 10, fontWeight: Fonts.weights.bold, marginBottom: 4 },
+authorCardTitle:    { color: Colors.textPrimary, fontSize: Fonts.sizes.sm, fontWeight: Fonts.weights.semibold, lineHeight: 18, marginBottom: Spacing.xs },
+authorCardCitations:{ color: Colors.textMuted, fontSize: Fonts.sizes.xs, marginTop: 4 },
 })
