@@ -57,14 +57,8 @@
         }
       ],
       "expo-secure-store",
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "kotlinVersion": "2.2.0"
-          }
-        }
-      ]
+      "expo-build-properties"
+        
     ],
     "experiments": {
       "typedRoutes": true,
