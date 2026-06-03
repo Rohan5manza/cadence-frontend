@@ -42,9 +42,16 @@
           "android": {
             "package": "com.rohan5marar.cadenceapp",
             "versionCode": 1,
+              "permissions": [
+    "android.permission.READ_EXTERNAL_STORAGE",
+    "android.permission.WRITE_EXTERNAL_STORAGE",
+    "android.permission.INTERNET"
+  ],
             "adaptiveIcon": {
-              "backgroundColor": "#0A0A0F",
-              "foregroundImage": "./assets/images/cadence-icon.png"
+                 "backgroundColor": "#0A0A0F",
+    "foregroundImage": "./assets/images/cadence-icon.png",
+    "backgroundImage": "./assets/images/android-icon-background.png",
+    "monochromeImage": "./assets/images/android-icon-monochrome.png"
             }
           }
         }

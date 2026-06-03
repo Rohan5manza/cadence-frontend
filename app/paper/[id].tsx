@@ -182,6 +182,13 @@ const [authorLoading, setAuthorLoading] = useState(false)
   const saved      = isSaved(paper.id)
   const categories = safeArray(paper.categories)
   const authors    = safeArray(paper.authors)
+  const isPdfUrl = (url: string) => 
+  url.includes('arxiv.org/pdf') ||
+  url.includes('.pdf') ||
+  url.includes('/pdf/') ||
+  url.includes('pdf?') ||
+  url.includes('type=pdf')
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -349,7 +356,7 @@ const [authorLoading, setAuthorLoading] = useState(false)
             </View>
            <WebView
  source={{ 
-  uri: Platform.OS === 'android' && !webViewError && isArxivPdf
+  uri: Platform.OS === 'android' && !webViewError && isPdfUrl(webViewUrl)
     ? `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(webViewUrl)}`
     : webViewUrl
 }}

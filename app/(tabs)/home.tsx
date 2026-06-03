@@ -189,7 +189,7 @@ const [hotLoading, setHotLoading]     = useState(false)
 
   // Toast state
   const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false })
-  let toastTimeout: NodeJS.Timeout
+  let toastTimeout: ReturnType<typeof setTimeout>
 
   const { addToHistory, recentHistory, loadHistory } = useStore()
 
