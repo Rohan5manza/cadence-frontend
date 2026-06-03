@@ -1,13 +1,12 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import {
-  ActivityIndicator,
-  ScrollView,
+  ActivityIndicator, Platform, ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { WebView } from 'react-native-webview'
@@ -199,24 +198,31 @@ export default function PaperReadScreen() {
           </View>
         </View>
 
-        {/* PDF mode */}
         {mode === 'pdf' && pdfUrl ? (
-          <View style={{ flex: 1 }}>
-            {pdfLoading && (
-              <View style={styles.pdfLoading}>
-                <ActivityIndicator size="large" color={Colors.accent} />
-                <Text style={styles.pdfLoadingText}>Loading PDF...</Text>
-              </View>
-            )}
-            <WebView
-              source={{ uri: pdfUrl }}
-              style={{ flex: 1, backgroundColor: bg }}
-              onLoad={() => setPdfLoading(false)}
-              onError={() => setPdfLoading(false)}
-              startInLoadingState={false}
-            />
-          </View>
-        ) : (
+  <View style={{ flex: 1 }}>
+    {pdfLoading && (
+      <View style={styles.pdfLoading}>
+        <ActivityIndicator size="large" color={Colors.accent} />
+        <Text style={styles.pdfLoadingText}>Loading PDF...</Text>
+      </View>
+    )}
+    <WebView
+      source={{ 
+        uri: Platform.OS === 'android'
+          ? `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(pdfUrl)}`
+          : pdfUrl
+      }}
+      style={{ flex: 1, backgroundColor: bg }}
+      onLoad={() => setPdfLoading(false)}
+      onError={() => setPdfLoading(false)}
+      startInLoadingState={false}
+      javaScriptEnabled
+      domStorageEnabled
+      scalesPageToFit={Platform.OS === 'android'}
+      allowsInlineMediaPlayback
+    />
+  </View>
+) : (
           /* Text / Summary mode */
           <ScrollView
             style={{ flex: 1 }}

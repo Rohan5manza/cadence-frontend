@@ -381,34 +381,29 @@ const [hotLoading, setHotLoading]     = useState(false)
             refreshing={refreshing}
             onRefresh={async () => {
   setRefreshing(true)
-  const today = new Date().toISOString().split('T')[0]
-  await SecureStore.deleteItemAsync(`todays_pick_${today}`).catch(() => {})
-  await SecureStore.deleteItemAsync(`todays_pick_id_${today}`).catch(() => {})
   setTopIndex(0)
   topIndexRef.current = 0
   setPapers([])
-  setTodaysPick(null)
   setLikedPapers([])
   setMoreLikeThis([])
   setTrendingPapers([])
   setSectionsLoading(true)
-
-  let pickId: string | null = null
-  try {
-    const pick = await feedAPI.getTodaysPick()
-    setTodaysPick(pick)
-    pickId = pick.id
-    const today2 = new Date().toISOString().split('T')[0]
-    await SecureStore.setItemAsync(`todays_pick_${today2}`, JSON.stringify(pick)).catch(() => {})
-    await SecureStore.setItemAsync(`todays_pick_id_${today2}`, pick.id).catch(() => {})
-  } catch {}
+  // ← removed setTodaysPick(null) — never reset it
 
   try {
     const discoverPapers = await feedAPI.getDiscover()
-    const filtered = pickId ? discoverPapers.filter(p => p.id !== pickId) : discoverPapers
-    setPapers(filtered)
+    setPapers(discoverPapers)
     setMixed([...discoverPapers].sort(() => Math.random() - 0.5).slice(0, 10))
     setMadeForYou(discoverPapers.slice(10, 20))
+    setStackError(false)
+  } catch { setStackError(true) }
+
+  // Always re-fetch today's pick to keep it fresh
+  // Backend DB cache guarantees same paper returns
+  try {
+    const pick = await feedAPI.getTodaysPick()
+    if (pick) setTodaysPick(pick)
+    // If fetch fails, todaysPick stays as previous value — section stays visible
   } catch {}
 
   try {
@@ -521,74 +516,11 @@ const [hotLoading, setHotLoading]     = useState(false)
             </TouchableOpacity>
           </View>
         )}
-
-        <HSection
-          title="♥ Liked by You"
-          papers={allLiked}
-          onPaperPress={goToPaper}
-          loading={sectionsLoading && likedPapers.length === 0}
-        />
-
-        {recentHistory.length > 0 && (
-          <HSection title="Recently Read" papers={recentHistory.slice(0, 10)} onPaperPress={goToPaper} />
-        )}
-
-        <HSection
-          title="More of What You Like"
-          papers={moreLikeThis}
-          onPaperPress={goToPaper}
-          loading={sectionsLoading && moreLikeThis.length === 0}
-        />
-
-        <HSection title="Mixed for You" papers={mixed} onPaperPress={goToPaper} />
-
-        {/* Trending by Genre */}
-        <View style={styles.hSection}>
-          <Text style={styles.hSectionTitle}>Trending by Genre</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.genreRow}>
-            {GENRES.map((g) => (
-              <TouchableOpacity
-                key={g.id}
-                style={[styles.genreChip, selectedGenre === g.id && styles.genreChipActive]}
-                onPress={() => setSelectedGenre(g.id)}
-              >
-                <Text style={styles.genreEmoji}>{g.emoji}</Text>
-                <Text style={[styles.genreLabel, selectedGenre === g.id && styles.genreLabelActive]}>
-                  {g.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          {trendingLoading ? (
-            <ActivityIndicator size="small" color={Colors.accent} style={{ marginLeft: Spacing.lg }} />
-          ) : trendingPapers.length > 0 ? (
-            <FlatList
-              horizontal
-              data={trendingPapers}
-              keyExtractor={(item) => item.id}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.hList}
-              getItemLayout={(_, index) => ({ length: 176, offset: 176 * index, index })}
-              renderItem={({ item }) => (
-                <MiniCard paper={item} onPress={() => goToPaper(item)} />
-              )}
-            />
-          ) : (
-            <Text style={styles.noGenreText}>
-              No trending papers for {GENRES.find(g => g.id === selectedGenre)?.label}
-            </Text>
-          )}
-        </View>
-
-        <HSection title="✦ Made for You" papers={madeForYou} onPaperPress={goToPaper} />
-
-        <View style={{ height: Spacing.xxl }} />
-        {/* 🌐 Hot Right Now */}
+          {/* ⚡  Hot Right Now */}
 <View style={styles.hSection}>
-  <Text style={styles.hSectionTitle}>🌐 Hot Right Now</Text>
+  <Text style={styles.hSectionTitle}>⚡Hot Right Now</Text>
   <Text style={styles.hSectionSubtitle}>
-    Trending from Papers With Code & Semantic Scholar
+    Trending breakthroughs across AI, medicine, and open science
   </Text>
   <ScrollView
     horizontal
@@ -625,6 +557,76 @@ const [hotLoading, setHotLoading]     = useState(false)
     <Text style={styles.noGenreText}>No hot papers found</Text>
   )}
 </View>
+        <HSection
+          title="♥ Liked by You"
+          papers={allLiked}
+          onPaperPress={goToPaper}
+          loading={sectionsLoading && likedPapers.length === 0}
+        />
+
+        {recentHistory.length > 0 && (
+          <HSection title="Recently Read" papers={recentHistory.slice(0, 10)} onPaperPress={goToPaper} />
+        )}
+
+        {/* Trending by Genre */}
+        <View style={styles.hSection}>
+          <Text style={styles.hSectionTitle}>🔍Discover by discipline</Text>
+          <Text style={styles.hSectionSubtitle}>
+    The highest-impact recent papers in your field.
+  </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.genreRow}>
+            {GENRES.map((g) => (
+              <TouchableOpacity
+                key={g.id}
+                style={[styles.genreChip, selectedGenre === g.id && styles.genreChipActive]}
+                onPress={() => setSelectedGenre(g.id)}
+              >
+                <Text style={styles.genreEmoji}>{g.emoji}</Text>
+                <Text style={[styles.genreLabel, selectedGenre === g.id && styles.genreLabelActive]}>
+                  {g.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          {trendingLoading ? (
+            <ActivityIndicator size="small" color={Colors.accent} style={{ marginLeft: Spacing.lg }} />
+          ) : trendingPapers.length > 0 ? (
+            <FlatList
+              horizontal
+              data={trendingPapers}
+              keyExtractor={(item) => item.id}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.hList}
+              getItemLayout={(_, index) => ({ length: 176, offset: 176 * index, index })}
+              renderItem={({ item }) => (
+                <MiniCard paper={item} onPress={() => goToPaper(item)} />
+              )}
+            />
+          ) : (
+            <Text style={styles.noGenreText}>
+              No trending papers for {GENRES.find(g => g.id === selectedGenre)?.label}
+            </Text>
+          )}
+        </View>
+
+        <HSection
+          title="More of What You Like"
+          papers={moreLikeThis}
+          onPaperPress={goToPaper}
+          loading={sectionsLoading && moreLikeThis.length === 0}
+        />
+
+        <HSection title="Mixed for You" papers={mixed} onPaperPress={goToPaper} />
+
+        
+
+        <HSection title="✦ Made for You" papers={madeForYou} onPaperPress={goToPaper} />
+
+        <View style={{ height: Spacing.xxl }} />
+
+
+        
       </ScrollView>
     </SafeAreaView>
   )

@@ -17,7 +17,8 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.rohan5marar.cadenceapp"
     },
     "web": {
       "output": "static",
@@ -26,31 +27,39 @@
     "plugins": [
       "expo-router",
       [
-  "expo-splash-screen",
-  {
-    "backgroundColor": "#0A0A0F",
-    "image": "./assets/images/cadence-icon.png",
-    "imageWidth": 200,
-    "resizeMode": "contain",
-    "ios": {
-      "image": "./assets/images/cadence-icon.png",
-      "imageWidth": 200,
-      "backgroundColor": "#0A0A0F",
-      "resizeMode": "contain"
-    },
-    "android": {
-      "image": "./assets/images/cadence-icon.png",
-      "imageWidth": 200,
-      "backgroundColor": "#0A0A0F",
-      "resizeMode": "contain"
-    }
-  }
-],
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0A0A0F",
+          "image": "./assets/images/cadence-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "ios": {
+            "image": "./assets/images/cadence-icon.png",
+            "imageWidth": 200,
+            "backgroundColor": "#0A0A0F",
+            "resizeMode": "contain"
+          },
+          "android": {
+            "package": "com.rohan5marar.cadenceapp",
+            "versionCode": 1,
+            "adaptiveIcon": {
+              "backgroundColor": "#0A0A0F",
+              "foregroundImage": "./assets/images/cadence-icon.png"
+            }
+          }
+        }
+      ],
       "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "00975b56-79eb-43b2-9520-9c4adac2c052"
+      }
     }
   }
 }

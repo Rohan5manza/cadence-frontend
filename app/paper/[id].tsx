@@ -3,12 +3,13 @@ import { useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
+  Platform,
   ScrollView,
   Share,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { WebView } from 'react-native-webview'
@@ -50,6 +51,8 @@ const [authorLoading, setAuthorLoading] = useState(false)
 
   const webViewOpenTime   = useRef<number | null>(null)
   const webViewReadLogged = useRef(false)
+  const isArxivPdf = webViewUrl.includes('arxiv.org/pdf')
+
 
   const hasPDF = !!(paper?.open_access_url || paper?.arxiv_id)
 
@@ -103,6 +106,7 @@ const [authorLoading, setAuthorLoading] = useState(false)
       libraryAPI.savePaper(paper.id).catch(() => {})
     }
   }
+  const [webViewError, setWebViewError] = useState(false)
 
   const handleShare = async () => {
     if (!paper) return
@@ -113,7 +117,9 @@ const [authorLoading, setAuthorLoading] = useState(false)
   }
 
   const openWebView = (url: string, mode: 'text' | 'pdf') => {
+    setWebViewError(false)
     if (!paper) return
+    
     webViewOpenTime.current   = Date.now()
     webViewReadLogged.current = false
     setReadingProgress({
@@ -341,16 +347,32 @@ const [authorLoading, setAuthorLoading] = useState(false)
                 <Text style={styles.webViewClose}>✕ Close</Text>
               </TouchableOpacity>
             </View>
-            <WebView
-              source={{ uri: webViewUrl }}
-              style={{ flex: 1 }}
-              startInLoadingState
-              renderLoading={() => (
-                <View style={styles.centered}>
-                  <ActivityIndicator size="large" color={Colors.accent} />
-                </View>
-              )}
-            />
+           <WebView
+ source={{ 
+  uri: Platform.OS === 'android' && !webViewError && isArxivPdf
+    ? `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(webViewUrl)}`
+    : webViewUrl
+}}
+  javaScriptEnabled
+  domStorageEnabled
+  scalesPageToFit={Platform.OS === 'android'}
+  allowsInlineMediaPlayback
+  injectedJavaScript={`
+    setTimeout(() => {
+      const body = document.body.innerText || '';
+      if (body.includes('No preview available') || body.includes('no preview')) {
+        window.ReactNativeWebView.postMessage('no_preview');
+      }
+    }, 3000);
+    true;
+  `}
+  onMessage={(e) => {
+    if (e.nativeEvent.data === 'no_preview' && !webViewError) {
+      setWebViewError(true)
+    }
+  }}
+  onError={() => !webViewError && setWebViewError(true)}
+/>
           </SafeAreaView>
         </View>
       ) : null}

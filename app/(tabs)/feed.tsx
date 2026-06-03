@@ -32,7 +32,7 @@ type SortMode = 'relevance' | 'date' | 'popular'
 const SORT_OPTIONS: { id: SortMode; label: string; emoji: string }[] = [
   { id: 'relevance', label: 'For You',   emoji: '✦' },
   { id: 'date',      label: 'Latest',    emoji: '🕐' },
-  { id: 'popular',   label: 'Most Cited',emoji: '🔥' },
+
 ]
 
 export default function FeedScreen() {
