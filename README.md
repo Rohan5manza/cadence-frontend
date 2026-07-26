@@ -84,15 +84,31 @@ cadence-app/
 │   ├── (tabs)/                   # Tab navigation
 │   │   ├── _layout.tsx           # Tab layout — sidebar on desktop, bottom tabs on mobile
 │   │   ├── home.tsx              # Home screen — discover cards + all sections
-│   │   ├── feed.tsx              # Feed tab — sorted paper list
+│   │   ├── feed.tsx              # Feed tab — sorted paper list with sort chips
 │   │   ├── search.tsx            # Search tab
 │   │   ├── library.tsx           # Library — saved papers + playlists
 │   │   └── profile.tsx           # Profile + preferences editor
 │   │
-│   └── paper/
-│       ├── [id].tsx              # Paper detail — metadata + actions
-│       ├── read.tsx              # Full paper reading mode
-│       └── similar.tsx           # Similar papers
+│   ├── paper/
+│   │   ├── [id].tsx              # Paper detail — metadata + actions
+│   │   ├── read.tsx              # Full paper reading mode
+│   │   └── similar.tsx           # Similar papers
+│   │
+│   └── playlist/
+│       └── [id].tsx              # Playlist detail
+│
+├── assets/
+│   └── images/
+│       ├── cadence-icon.png      # App icon (1024×1024)
+│       └── logo-glow.png         # Logo variant
+│
+├── constants/
+│   └── index.ts                  # Colors, Fonts, Spacing, ROLES, TOPICS, etc.
+│
+├── scripts/                      # PWA build helpers
+│   ├── manifest.json             # PWA manifest template
+│   ├── post-build.sh             # Run after expo export — injects manifest + sw
+│   └── sw.js                     # Service worker
 │
 ├── services/
 │   ├── api.ts                    # All API calls — feedAPI, papersAPI, authAPI, etc.
@@ -100,23 +116,17 @@ cadence-app/
 │
 ├── store/
 │   └── useStore.ts               # Zustand store — auth, preferences, streak, history
-│                                 # Web-safe storage (localStorage on web, SecureStore native)
-│
-├── constants/
-│   └── index.ts                  # Colors, Fonts, Spacing, ROLES, TOPICS, etc.
 │
 ├── types/
 │   └── index.ts                  # TypeScript interfaces — Paper, User, Playlist, etc.
 │
-├── assets/
-│   └── images/
-│       ├── cadence-icon.png      # App icon (1024×1024)
-│       └── ...                   # Other assets
-│
-└── scripts/
-    ├── post-build.sh             # Run after expo export — adds PWA manifest + sw.js
-    ├── manifest.json             # PWA manifest
-    └── sw.js                     # Service worker
+├── app.json                      # Expo config — icons, splash, bundle IDs, PWA settings
+├── eas.json                      # EAS Build profiles — development, preview, production
+├── package.json                  # Dependencies
+├── tsconfig.json                 # TypeScript config
+├── expo-env.d.ts                 # Expo TypeScript declarations
+├── LICENSE                       # MIT License
+└── README.md                     # This file
 ```
 
 ---
