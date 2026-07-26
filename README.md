@@ -1,4 +1,4 @@
-# Cadence App
+# Cadence App Frontend
 
 > AI-powered research paper discovery — React Native + Expo PWA
 
