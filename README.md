@@ -29,10 +29,6 @@ The Cadence frontend — a cross-platform React Native app with a PWA web export
 
 ![Frontend](assets/images/1.jpeg)
 ![Frontend](assets/images/2.jpeg)
-![Frontend](assets/images/3.jpeg)
-![Frontend](assets/images/4.jpeg)
-![Frontend](assets/images/5.jpeg)
-![Frontend](assets/images/6.jpeg)
 
 
 ## Quick Start
@@ -319,3 +315,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 ## License
 
 MIT License.
+
+![Frontend](assets/images/3.jpeg)
+![Frontend](assets/images/4.jpeg)
+![Frontend](assets/images/5.jpeg)
+![Frontend](assets/images/6.jpeg)
