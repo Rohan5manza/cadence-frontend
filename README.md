@@ -1,6 +1,6 @@
 # Cadence App Frontend
 
-> AI-powered research paper discovery — React Native + Expo PWA
+> AI-powered research paper discovery — React Native + Expo PWA(progressive web app) hosted on Github Pages
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Expo SDK](https://img.shields.io/badge/Expo-SDK%2056-blue.svg)](https://expo.dev)
@@ -8,7 +8,7 @@
 
 The Cadence frontend — a cross-platform React Native app with a PWA web export. Works on iOS, Android, and any browser. Installable on any device without an app store.
 
-**Live PWA:** [cadence.rohanmarar.com](https://cadence.rohanmarar.com)  
+**Live PWA demo :** [cadence.rohanmarar.com](https://cadence.rohanmarar.com)  
 **Backend repo:** [github.com/Rohan5manza/cadence-backend](https://github.com/Rohan5manza/cadence-backend)
 
 ---
@@ -26,6 +26,14 @@ The Cadence frontend — a cross-platform React Native app with a PWA web export
 - **PWA** — installable on desktop, mobile, any OS
 
 ---
+
+![Frontend](assets/images/1.jpeg)
+![Frontend](assets/images/2.jpeg)
+![Frontend](assets/images/3.jpeg)
+![Frontend](assets/images/4.jpeg)
+![Frontend](assets/images/5.jpeg)
+![Frontend](assets/images/6.jpeg)
+
 
 ## Quick Start
 
